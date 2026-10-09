@@ -448,6 +448,12 @@ class PipelineCache : public MTLD3D11PipelineCacheBase {
   }
 
 public:
+  ~PipelineCache() override {
+    // Members are destroyed in reverse declaration order. Join workers while
+    // shader variants, pipelines and their dependencies are still alive.
+    scheduler_.shutdown();
+  }
+
   PipelineCache(MTLD3D11Device *pDevice) :
       scache_(ShaderCache::getInstance(pDevice->GetDXMTDevice().metalVersion())),
       device(pDevice),

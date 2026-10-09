@@ -20,6 +20,9 @@ public:
 
   task_scheduler();
   ~task_scheduler();
+  // Called by the owner before destroying the objects referenced by tasks.
+  // Queued work may be abandoned; running work is joined before returning.
+  void shutdown();
 
   uint64_t
   get_running_threads() {
@@ -56,7 +59,14 @@ template <typename Task> task_scheduler<Task>::task_scheduler() {
 }
 
 template <typename Task> task_scheduler<Task>::~task_scheduler() {
-  destroyed.store(true);
+  shutdown();
+}
+
+template <typename Task> void task_scheduler<Task>::shutdown() {
+  {
+    std::lock_guard<dxmt::mutex> lock(worker_mutex_);
+    destroyed.store(true);
+  }
   worker_cond_.notify_all();
 
   for (auto &worker : workers_) {
@@ -83,6 +93,9 @@ task_scheduler<Task>::worker_func() {
           return task_queue_.size() || task_continuation_queue_.size() || destroyed.load();
         });
       }
+
+      if (destroyed.load())
+        break;
 
       if (!task_continuation_queue_.empty()) {
         task = task_continuation_queue_.front();
@@ -133,6 +146,8 @@ template <typename Task>
 void
 task_scheduler<Task>::submit(Task task) {
   std::unique_lock<dxmt::mutex> lock(worker_mutex_);
+  if (destroyed.load())
+    return;
   task_queue_.push(task);
 
   if (running.load(std::memory_order_relaxed) == threads && threads < max_threads) {
