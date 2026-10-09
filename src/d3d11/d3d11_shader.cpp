@@ -1,4 +1,5 @@
 #include "d3d11_shader.hpp"
+#include "d3d11_shader_bitcode.hpp"
 #include "Metal.hpp"
 #include "airconv_public.h"
 #include "config/config.hpp"
@@ -77,11 +78,13 @@ public:
       if (!compile_result)
         return this;
 
+      CompiledBitcode owned_bitcode(compile_result);
+
       SM50GetCompiledBitcode(compile_result, &bitcode);
       lib_data = WMT::MakeDispatchData(bitcode.Data, bitcode.Size);
       auto library = device_->GetMTLDevice().newLibrary(lib_data, err);
 
-      if (err) {
+      if (err || !library) {
         ERR("Failed to create MTLLibrary: ", err.description().getUTF8String());
         shader_->dump();
         return this;
@@ -89,7 +92,6 @@ public:
 
       shader_->update_cached_variant(variant_digest_, lib_data);
 
-      SM50DestroyBitcode(compile_result);
       function_ = library.newFunction(func_name.c_str());
 
       if (function_ == nullptr) {
