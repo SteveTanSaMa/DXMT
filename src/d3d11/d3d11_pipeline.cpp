@@ -52,6 +52,7 @@ public:
   }
 
   ThreadpoolWork *RunThreadpoolWork() {
+    auto pool = WMT::MakeAutoreleasePool();
 
     TRACE("Start compiling 1 PSO");
 
@@ -156,6 +157,7 @@ public:
   }
 
   ThreadpoolWork *RunThreadpoolWork() {
+    auto pool = WMT::MakeAutoreleasePool();
 
     TRACE("Start compiling 1 PSO");
 

@@ -986,6 +986,7 @@ WINEMETAL_API void
 MTLBinaryArchive_serialize(obj_handle_t archive, const char *url, obj_handle_t *err_out) {
   struct unixcall_mtlbinaryarchive_serialize params;
   params.archive = archive;
+  params.ret_error = 0;
   WMT_MEMPTR_SET(params.url, url);
   UNIX_CALL(113, &params);
   if (err_out)

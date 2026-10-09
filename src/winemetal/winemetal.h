@@ -27,6 +27,9 @@
 
 typedef uint64_t obj_handle_t;
 
+// NSError handles returned through err_out are borrowed (+0), just like
+// Objective-C error parameters. Retain them to outlive the autorelease pool.
+
 #define NULL_OBJECT_HANDLE 0
 
 #ifndef _MACH_PORT_T

@@ -7,3 +7,9 @@ test('scheduler-lifetime', executable('scheduler-lifetime', 'scheduler_lifetime.
      include_directories: inc, dependencies: threads), timeout: 30)
 test('reference-ownership', executable('reference-ownership', 'reference_ownership.cpp',
      include_directories: inc))
+if host_machine.system() == 'darwin'
+  add_languages('objcpp')
+  foundation = dependency('appleframeworks', modules: ['Foundation'])
+  test('error-ownership', executable('error-ownership', 'error_ownership.mm',
+       include_directories: inc, dependencies: foundation))
+endif

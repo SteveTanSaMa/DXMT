@@ -97,6 +97,7 @@ public:
   }
 
   ThreadpoolWork *RunThreadpoolWork() {
+    auto pool = WMT::MakeAutoreleasePool();
 
     WMT::Reference<WMT::Error> err;
     MTL_COMPILED_SHADER vhs, ds, ps;
