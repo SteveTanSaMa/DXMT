@@ -4,6 +4,9 @@ This flow produces a **candidate** DXMT renderer; it does not patch MiPlay, copy
 files into its runtime, start Wine/game processes, or publish a GitHub release.
 The existing MiPlay v0.80 assets remain the production baseline.
 
+For the independent **MiPlay-DXMT** clone, owned Wine runtime/prefix and gated
+GPU integration probe, see [the local testing environment](MIPLAY_LOCAL_TESTING.md).
+
 ## Dependencies and build profile
 
 - macOS with Xcode and the Metal toolchain, Python 3.11+, Meson 1.11.2, Ninja.
