@@ -1,4 +1,5 @@
 #include "dxgi_interfaces.h"
+#include "dxmt_cache_policy.hpp"
 #include "log/log.hpp"
 #include "util_env.hpp"
 #include "winemetal.h"
@@ -50,14 +51,18 @@ static void InitializeVendorExtensionNV() {
   if (key3) RegCloseKey(key3);
 };
 
-static void InitializeMetalCachePath() {
-  if (env::getEnvVar("DXMT_USE_DEFAULT_METAL_CACHE") == "1")
-    return;
+static bool InitializeMetalCachePath() {
   // This is the framework cache (mainly for PSOs), not managed by DXMT
   auto metal_cache_path = str::format("dxmt/", env::getExeName(), "/com.apple.metal");
-  if (!WMTSetMetalShaderCachePath(metal_cache_path.c_str())) {
-    Logger::info("Failed to set Metal cache path, fallback to system default");
-  }
+  return configureMetalCache(
+      metal_cache_path, env::getEnvVar("DXMT_METAL_CACHE_PATH"), env::getEnvVar("DXMT_SHADER_CACHE_PATH"),
+      env::getEnvVar("DXMT_SHADER_CACHE") == "0", env::getEnvVar("DXMT_USE_DEFAULT_METAL_CACHE") == "1",
+      env::getEnvVar("DXMT_REQUIRE_ISOLATED_CACHE") == "1", [](const std::string &path) {
+        bool configured = WMTSetMetalShaderCachePath(path.c_str());
+        if (!configured)
+          Logger::info("Failed to set Metal cache path");
+        return configured;
+      });
 }
 
 extern "C" BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason,
@@ -67,7 +72,10 @@ extern "C" BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason,
 
   DisableThreadLibraryCalls(instance);
 
-  InitializeMetalCachePath();
+  if (!InitializeMetalCachePath()) {
+    Logger::err("Metal cache configuration rejected; refusing an unisolated renderer startup");
+    return FALSE;
+  }
   std::call_once(nvext_init, InitializeVendorExtensionNV);
 
   return TRUE;
