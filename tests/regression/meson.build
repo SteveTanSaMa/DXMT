@@ -5,3 +5,5 @@ inc = include_directories('../../src/util', '../../src/winemetal',
 threads = dependency('threads')
 test('scheduler-lifetime', executable('scheduler-lifetime', 'scheduler_lifetime.cpp',
      include_directories: inc, dependencies: threads), timeout: 30)
+test('reference-ownership', executable('reference-ownership', 'reference_ownership.cpp',
+     include_directories: inc))

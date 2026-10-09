@@ -69,7 +69,7 @@ public:
     this->handle = copy.handle;
     this->retain();
   }
-  Reference(Reference &&move) {
+  Reference(Reference &&move) noexcept {
     this->handle = move.handle;
     move.handle = NULL_OBJECT_HANDLE;
   }
@@ -83,22 +83,21 @@ public:
 
   Reference &
   operator=(const Reference &copy) {
-    if (this->handle != NULL_OBJECT_HANDLE)
-      this->release();
-    this->handle = copy.handle;
-    this->retain();
-    return *this;
+    return operator=(static_cast<Class>(copy));
   }
   Reference &
   operator=(Class non_retained) {
+    // The borrowed input may alias our last owning reference.
+    non_retained.retain();
     if (this->handle != NULL_OBJECT_HANDLE)
       this->release();
     this->handle = non_retained.handle;
-    this->retain();
     return *this;
   }
   Reference &
-  operator=(Reference &&move) {
+  operator=(Reference &&move) noexcept {
+    if (this == &move)
+      return *this;
     if (this->handle != NULL_OBJECT_HANDLE)
       this->release();
     this->handle = move.handle;
