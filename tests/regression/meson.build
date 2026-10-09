@@ -1,4 +1,4 @@
-project('dxmt-regression', 'cpp', default_options: ['cpp_std=c++20', 'warning_level=2'])
+project('dxmt-regression', 'cpp', default_options: ['cpp_std=c++20', 'warning_level=2', 'b_ndebug=false'])
 
 inc = include_directories('../../src/util', '../../src/winemetal',
                           '../../include/native/windows', '../../include/native/directx')

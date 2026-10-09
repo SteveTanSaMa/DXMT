@@ -1,0 +1,50 @@
+name: MiPlay candidate
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['src/**', 'scripts/miplay*', 'tests/regression/**', 'tests/packaging/**', '.github/workflows/miplay.yml']
+  pull_request:
+    paths: ['src/**', 'scripts/miplay*', 'tests/regression/**', 'tests/packaging/**', '.github/workflows/miplay.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install test/build tools
+        run: python3 -m pip install meson==1.11.2 ninja==1.13.2
+      - uses: actions/cache@v4
+        with:
+          path: toolchains/miplay
+          key: miplay-toolchains-${{ runner.os }}-${{ hashFiles('scripts/miplay_toolchains.json') }}
+      - name: Bootstrap pinned dependencies
+        run: python3 scripts/miplay_bootstrap.py
+      - name: Regression tests with sanitizers
+        run: |
+          meson setup build/regression-asan tests/regression --buildtype=debug -Db_sanitize=address,undefined
+          meson test -C build/regression-asan --print-errorlogs
+      - name: Build and verify complete renderer
+        run: |
+          python3 scripts/miplay_build.py --llvm-root toolchains/miplay/llvm --mingw-root toolchains/miplay/mingw --wine-sdk-root toolchains/miplay/wine --wine-sdk-id v8.16-3shain
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: miplay-candidate-and-diagnostics
+          path: |
+            releases/
+            build/miplay-candidate/*.log
+            build/miplay-candidate/regression/meson-logs/testlog*
+            build/regression-asan/meson-logs/testlog*

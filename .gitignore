@@ -17,3 +17,4 @@ ref.sh
 *.test
 releases
 prefixes
+__pycache__/

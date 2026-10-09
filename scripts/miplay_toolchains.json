@@ -1,0 +1,23 @@
+{
+  "llvm": {
+    "version": "15.0.7-x86_64-apple-darwin21.0",
+    "url": "https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.7/clang%2Bllvm-15.0.7-x86_64-apple-darwin21.0.tar.xz",
+    "archive": "llvm-15.0.7.tar.xz",
+    "sha256": "d16b6d536364c5bec6583d12dd7e6cf841b9f508c4430d9ee886726bd9983f1c",
+    "strip_components": 1
+  },
+  "mingw": {
+    "version": "20260908-ucrt-macos-universal",
+    "url": "https://github.com/mstorsjo/llvm-mingw/releases/download/20260908/llvm-mingw-20260908-ucrt-macos-universal.tar.xz",
+    "archive": "llvm-mingw-20260908.tar.xz",
+    "sha256": "d1dc5d1ecf3a3ced5ed5544c72f1acd0c8e84eb3024d520ecc6b143eec62a149",
+    "strip_components": 1
+  },
+  "wine": {
+    "version": "v8.16-3shain",
+    "url": "https://github.com/3Shain/wine/releases/download/v8.16-3shain/wine.tar.gz",
+    "archive": "wine-v8.16.tar.gz",
+    "sha256": "289c7f19e270a3d3d0a6fdb07691b176c70a0795f6811e5255cba82425de4f10",
+    "strip_components": 0
+  }
+}
