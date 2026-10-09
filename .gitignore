@@ -18,3 +18,4 @@ ref.sh
 releases
 prefixes
 __pycache__/
+.local-testing/
