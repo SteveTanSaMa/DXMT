@@ -59,7 +59,14 @@ def verify(directory):
             raise ValueError(f"File checksum/size mismatch: {name}")
         if check_binary(path) != record["format"]:
             raise ValueError(f"File architecture mismatch: {name}")
-    expected = {"manifest.json", *(f"dxmt/{name}" for name in FILES)}
+    integration = manifest.get("integration_files", {})
+    if set(integration) - {"dxmt-cache-bootstrap.dylib"}:
+        raise ValueError("Unexpected integration helper")
+    for name, record in integration.items():
+        path = directory / "integration" / name
+        if path.is_symlink() or not path.is_file() or sha256(path) != record["sha256"] or path.stat().st_size != record["size"] or check_binary(path) != record["format"]:
+            raise ValueError("Integration helper checksum/architecture mismatch")
+    expected = {"manifest.json", *(f"dxmt/{name}" for name in FILES), *(f"integration/{name}" for name in integration)}
     sums = {}
     for line in (directory / "SHA256SUMS").read_text().splitlines():
         digest, name = line.split("  ", 1)
@@ -89,10 +96,18 @@ def package(install, output, metadata):
             shutil.copyfile(source, target)
             target.chmod(0o644)
             records[name] = {"sha256": sha256(target), "size": target.stat().st_size, "format": format_name}
-        manifest = dict(metadata, schema_version=1, files=records,
+        integration = {}
+        helper = install / "integration/dxmt-cache-bootstrap.dylib"
+        if helper.exists():
+            if helper.is_symlink(): raise ValueError("Expected a regular integration helper")
+            format_name = check_binary(helper)
+            (directory / "integration").mkdir()
+            shutil.copyfile(helper, directory / "integration" / helper.name)
+            integration[helper.name] = {"sha256": sha256(helper), "size": helper.stat().st_size, "format": format_name}
+        manifest = dict(metadata, schema_version=1, files=records, integration_files=integration,
                         status="candidate", game_runtime_validation="not_performed")
         (directory / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
-        checksummed = ["manifest.json", *(f"dxmt/{name}" for name in sorted(FILES))]
+        checksummed = ["manifest.json", *(f"dxmt/{name}" for name in sorted(FILES)), *(f"integration/{name}" for name in sorted(integration))]
         (directory / "SHA256SUMS").write_text("".join(f"{sha256(directory / name)}  {name}\n" for name in checksummed))
         verify(directory)
         # Stable archive headers; this does not promise byte-identical compiler output.

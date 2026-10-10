@@ -49,6 +49,16 @@ class PackageTests(unittest.TestCase):
         package(self.install, other, {"source_date_epoch": "12345"})
         self.assertEqual(sha256(str(output) + ".tar.gz"), sha256(str(other) + ".tar.gz"))
 
+    def test_optional_bootstrap_is_packaged_and_integrity_checked(self):
+        helper = self.install / "integration/dxmt-cache-bootstrap.dylib"
+        helper.parent.mkdir()
+        helper.write_bytes((self.install / FILES["winemetal.so"]).read_bytes())
+        output = self.create()
+        self.assertEqual(set(verify(output)["integration_files"]), {helper.name})
+        (output / "integration" / helper.name).write_bytes(b"corrupted")
+        with self.assertRaises(ValueError):
+            verify(output)
+
     def test_missing_component_is_not_published(self):
         (self.install / FILES["winemetal.so"]).unlink()
         with self.assertRaises(ValueError):

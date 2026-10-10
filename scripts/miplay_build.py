@@ -136,6 +136,12 @@ def main():
         build / "package-tests.log", env)
     run(["meson", "compile", "-C", build, "-j", args.jobs], build / "compile.log", env)
     run(["meson", "install", "-C", build, "--no-rebuild"], build / "install.log", env)
+    helper = build / "install/integration/dxmt-cache-bootstrap.dylib"
+    helper.parent.mkdir(parents=True, exist_ok=True)
+    run(["xcrun", "clang", "-arch", "x86_64", "-dynamiclib", "-O2",
+         f"-mmacosx-version-min={args.deployment_target}", ROOT / "src/winemetal/unix/cache_bootstrap.m",
+         "-framework", "Foundation", "-framework", "Metal", "-o", helper], build / "cache-bootstrap-build.log", env)
+    helper_dependencies = check_dependencies(helper)
     dependencies = check_dependencies(build / "install/x86_64-unix/winemetal.so")
     load_commands = capture("otool", "-l", str(build / "install/x86_64-unix/winemetal.so"))
     minimum_os = re.search(r"\bminos\s+(\S+)", load_commands)
@@ -162,7 +168,7 @@ def main():
                                        for name, path in (("llvm", llvm), ("mingw", mingw), ("wine", wine))},
         "llvm_library_sha256": {name: sha256(path) for name, path in desired.items()},
         "input_sha256": {str(path): sha256(path) for path in required if path.is_file()},
-        "unix_dependencies": dependencies, "checks": {"regressions": "passed", "packaging": "passed", "cross_build": "passed"},
+        "unix_dependencies": dependencies, "cache_bootstrap_dependencies": helper_dependencies, "checks": {"regressions": "passed", "packaging": "passed", "cross_build": "passed"},
     }
     identity = source["commit"][:12] + ("-dirty-" + source["diff_sha256"][:8] if source["dirty"] else "")
     output = package(build / "install", args.output_root.resolve() / ("dxmt-miplay-" + identity), metadata)
