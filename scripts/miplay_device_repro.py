@@ -10,6 +10,12 @@ from miplay_package import sha256
 
 
 def compile_repro():
+    manifest = json.loads((STATE / 'Candidate/manifest.json').read_text())
+    renderer_commit = manifest['source']['commit']
+    if not re.fullmatch(r'[0-9a-f]{40}', renderer_commit):
+        raise ValueError('Invalid renderer source revision')
+    if subprocess.run(['git', 'diff', '--quiet', renderer_commit, '--', 'src', 'include', 'libs'], cwd=ROOT).returncode:
+        raise ValueError('Current layout sources differ from the candidate; build/select a matching candidate first')
     build = ROOT / 'build/miplay-candidate'
     entry = next(e for e in json.loads((build / 'compile_commands.json').read_text()) if e['file'].endswith('dxmt_context.cpp'))
     if Path(entry['directory']).resolve() != build.resolve():
@@ -35,6 +41,7 @@ def compile_repro():
     subprocess.run(compile_command, check=True)
     (directory / 'device-repro-build.json').write_text(json.dumps({
         'fork_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
+        'renderer_commit': renderer_commit,
         'upstream_fix': 'fb4515681daefb789a4d0f403c4bdbca88f3b3de', 'command_queue_size': size,
         'sizeof_command': command, 'compile_command': compile_command,
         'source_sha256': sha256(probe_source), 'executable_sha256': sha256(executable),

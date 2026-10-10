@@ -148,3 +148,7 @@ work, graphics, game startup, exit/cancellation, fullscreen/resize and long
 sessions for all three games. Compare with v0.80. Historical ZZZ crashes are not
 declared fixed by these source changes. MiPlay transactional staging and
 package identity consumption remain a separately authorized next phase.
+
+The opt-in `python3 scripts/miplay_local_testing.py device-probe` adapts MiPlay's
+40-device creation regression to the current Windows CommandQueue layout.
+See [repair provenance and validation limits](MIPLAY_ZZZ_REPAIR_IMPORT_2026-10-10.md).

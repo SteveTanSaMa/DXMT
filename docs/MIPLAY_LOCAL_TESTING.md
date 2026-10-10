@@ -2,7 +2,8 @@
 
 Environment established on 2026-10-09. Updates on 2026-10-10:
 [serial game observations](MIPLAY_GAME_SMOKE_2026-10-10.md) and
-[early Metal cache initialization fix](MIPLAY_METAL_CACHE_INITIALIZATION.md).
+[early Metal cache initialization fix](MIPLAY_METAL_CACHE_INITIALIZATION.md), and
+[MiPlay device initialization repair import](MIPLAY_ZZZ_REPAIR_IMPORT_2026-10-10.md).
 Later game runs use provenance-tracked, independent APFS game copies,
 redirected Prefix user folders/Z: and explicitly enabled Metal HUD. This is the DXMT fork's environment;
 the LSFG fork must create its own **MiPlay-LSFG**, application identity and
