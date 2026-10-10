@@ -198,7 +198,7 @@ def preflight():
     return manifest
 
 
-def run_tests(real_wine=False):
+def run_tests(real_wine=False, device_repro=False):
     manifest = preflight()
     identity = clone_identity()
     env = dict(os.environ, MIPLAY_DXMT_TEST_ROOT=str(STATE), TMPDIR=str(STATE / "tmp") + "/")
@@ -208,13 +208,17 @@ def run_tests(real_wine=False):
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
     results = owned(AREA / "results-dxmt")
     results.mkdir(exist_ok=True)
-    label = "wine-probe" if real_wine else "unit"
+    label = "device-probe" if device_repro else ("wine-probe" if real_wine else "unit")
     command = ["xcodebuild", "-project", str(CLONE / "MiPlay.xcodeproj"), "-scheme", "MiPlay",
         "-configuration", "Debug", "-derivedDataPath", str(AREA / "DerivedData-DXMT"),
         "-resultBundlePath", str(results / f"{label}-{stamp}.xcresult"), "test",
         "CODE_SIGNING_ALLOWED=NO", "-parallel-testing-enabled", "NO",
         f"MIPLAY_DXMT_REAL_WINE={'1' if real_wine else '0'}"]
-    if real_wine:
+    if device_repro:
+        from miplay_device_repro import compile_repro
+        compile_repro()
+        command.append("-only-testing:MiPlayTests/MiPlayCoreTests/testDXMTRepeatedDeviceInitialization")
+    elif real_wine:
         compiler = ROOT / "toolchains/miplay/mingw/bin/x86_64-w64-mingw32-clang++"
         subprocess.run([str(compiler), "-std=c++20", "-O2", "-static", str(ROOT / "tests/integration/dxmt_wine_compute.cpp"),
             "-o", str(STATE / "Tests/dxmt_compute.exe"), "-ld3d11", "-ld3dcompiler"], check=True)
@@ -238,8 +242,9 @@ def run_tests(real_wine=False):
         if clone_identity() != identity:
             raise RuntimeError("MiPlay source changed during testing; result cannot be attributed to the starting revision")
         if real_wine:
-            report = owned(STATE / "Logs/compute-probe.txt", STATE)
-            if not report.is_file() or report.stat().st_mtime < started or "COMPUTE_RESULT=42" not in report.read_text():
+            report = owned(STATE / ("Logs/device-probe.txt" if device_repro else "Logs/compute-probe.txt"), STATE)
+            marker = "MIPLAY_DEVICE_REPRO completed=40" if device_repro else "COMPUTE_RESULT=42"
+            if not report.is_file() or report.stat().st_mtime < started or marker not in report.read_text():
                 raise RuntimeError("No fresh GPU readback result; a skipped test is not a successful real probe")
         record["result"] = "passed"
     except Exception:
@@ -265,7 +270,7 @@ def export():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["clone", "prepare", "runtime", "preflight", "test", "probe", "export"])
+    parser.add_argument("command", choices=["clone", "prepare", "runtime", "preflight", "test", "probe", "device-probe", "export"])
     parser.add_argument("--candidate", type=Path)
     parser.add_argument("--replace-candidate", action="store_true")
     args = parser.parse_args()
@@ -277,6 +282,7 @@ def main():
     elif args.command == "preflight": preflight()
     elif args.command == "test": run_tests()
     elif args.command == "probe": run_tests(real_wine=True)
+    elif args.command == "device-probe": run_tests(real_wine=True, device_repro=True)
     elif args.command == "export": export()
 
 
