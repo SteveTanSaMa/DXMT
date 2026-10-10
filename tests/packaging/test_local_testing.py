@@ -64,7 +64,7 @@ class LocalIsolationTests(unittest.TestCase):
             path = self.base / label
             (path / "dxmt").mkdir(parents=True)
             (path / "dxmt/dxgi.dll").write_bytes(b"DXMT_METAL_CACHE_PATH DXMT_REQUIRE_ISOLATED_CACHE")
-            (path / "manifest.json").write_text(json.dumps({"files": {"identity": label}, "source": {"commit": label}}))
+            (path / "manifest.json").write_text(json.dumps({"files": {"identity": "same-renderer"}, "integration_files": {"helper": label}, "source": {"commit": label}}))
             candidates.append(path)
         def fake_verify(path):
             return json.loads((path / "manifest.json").read_text())

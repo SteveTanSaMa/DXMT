@@ -108,7 +108,7 @@ def prepare(candidate, replace=False):
     destination = owned(STATE / "Candidate", STATE)
     if destination.exists():
         existing = verify(destination)
-        if existing["files"] != manifest["files"]:
+        if existing["files"] != manifest["files"] or existing.get("integration_files", {}) != manifest.get("integration_files", {}):
             if not replace:
                 raise ValueError("An existing candidate differs; --replace-candidate requires an idle test session and preserves a backup")
             assert_idle()

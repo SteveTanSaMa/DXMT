@@ -54,9 +54,29 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--genshin', type=Path)
     parser.add_argument('--zzz', type=Path)
+    parser.add_argument('--owned-game', choices=['GenshinImpact', 'ZenlessZoneZero'], action='append', help='Run existing provenance-tracked DXMT copies without accessing formal installations')
     parser.add_argument('--reuse-copies', action='store_true', help='Reuse only source-matched copies with provenance markers')
     args = parser.parse_args()
+    if args.owned_game and (args.genshin or args.zzz):
+        parser.error('--owned-game cannot be combined with source paths')
     configs, sources = [], []
+    for kind in args.owned_game or []:
+        if any(c['type'] == kind for c in configs):
+            parser.error('A game may be selected only once')
+        exe = 'YuanShen.exe' if kind == 'GenshinImpact' else 'ZenlessZoneZero.exe'
+        game = owned(STATE / 'Games' / kind, STATE)
+        marker = owned(STATE / f'Config/game-copy-{kind}.json', STATE)
+        provenance = json.loads(marker.read_text())
+        if not provenance.get('files') or not (game / exe).is_file():
+            raise ValueError('Owned game copy lacks clone provenance or executable')
+        copied = inventory(game)
+        original_exe = provenance['files'].get(exe)
+        if not original_exe or copied[exe][0] == original_exe[0] or copied[exe][1] != original_exe[1] or provenance.get('executable_sha256') != sha256(game / exe):
+            raise ValueError('Owned executable inode/size does not match independent-copy provenance')
+        configs.append({'type': kind, 'exe': exe})
+        sources.append({'game': kind, 'source': None, 'copy': str(game), 'clone_origin': provenance['source'],
+                        'provenance_sha256': sha256(marker), 'copy_before': copied,
+                        'executable_sha256': sha256(game / exe)})
     for kind, source, exe in [('GenshinImpact', args.genshin, 'YuanShen.exe'), ('ZenlessZoneZero', args.zzz, 'ZenlessZoneZero.exe')]:
         if source is None:
             continue
@@ -75,7 +95,7 @@ def main():
             inventory(game)  # Reject any newly introduced symlinks.
         else:
             before = clone_game(source, game)
-            marker.write_text(json.dumps({'source': str(source), 'files': before}, indent=2) + '\n')
+            marker.write_text(json.dumps({'source': str(source), 'files': before, 'executable_sha256': sha256(source / exe)}, indent=2) + '\n')
         configs.append({'type': kind, 'exe': exe})
         sources.append({'game': kind, 'source': str(source), 'copy': str(game), 'files': before,
                         'executable_sha256': sha256(source / exe)})
@@ -117,8 +137,9 @@ def main():
                 value['process_observation'] = 'alive_at_both_checkpoints' if len(value.get('checkpoints', [])) == 2 and all(c['game_process_alive'] for c in value['checkpoints']) else 'exit_or_launch_failure_requires_review'
                 observations.append(value)
         record['observations'] = observations
-        record['source_installations_unchanged'] = all(inventory(Path(s['source'])) == s['files'] and sha256(Path(s['source']) / next(c['exe'] for c in configs if c['type'] == s['game'])) == s['executable_sha256'] for s in sources)
-        record['result'] = 'completed' if status == 0 and len(observations) == len(configs) and all([c['target_seconds'] for c in v.get('checkpoints', [])] == [40, 140] for v in observations) and record['source_installations_unchanged'] else 'failed'
+        record['source_comparison_performed'] = any(s['source'] for s in sources)
+        record['source_installations_unchanged'] = all(inventory(Path(s['source'])) == s['files'] and sha256(Path(s['source']) / next(c['exe'] for c in configs if c['type'] == s['game'])) == s['executable_sha256'] for s in sources if s['source']) if record['source_comparison_performed'] else None
+        record['result'] = 'completed' if status == 0 and len(observations) == len(configs) and all([c['target_seconds'] for c in v.get('checkpoints', [])] == [40, 140] for v in observations) and record['source_installations_unchanged'] is not False else 'failed'
         if record['miplay_source'] != clone_identity():
             record['result'] = 'failed'
             raise ValueError('Clone source changed during testing')

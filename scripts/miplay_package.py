@@ -62,6 +62,9 @@ def verify(directory):
     integration = manifest.get("integration_files", {})
     if set(integration) - {"dxmt-cache-bootstrap.dylib"}:
         raise ValueError("Unexpected integration helper")
+    integration_dir = directory / "integration"
+    if integration_dir.is_symlink() or (integration_dir.exists() and {p.name for p in integration_dir.iterdir()} != set(integration)):
+        raise ValueError("Integration directory contains unexpected or symlinked files")
     for name, record in integration.items():
         path = directory / "integration" / name
         if path.is_symlink() or not path.is_file() or sha256(path) != record["sha256"] or path.stat().st_size != record["size"] or check_binary(path) != record["format"]:
