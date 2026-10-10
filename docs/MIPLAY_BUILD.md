@@ -69,9 +69,17 @@ dxmt-miplay-<commit>/
   dxmt/winemetal.so
   manifest.json
   SHA256SUMS
+  integration/dxmt-cache-bootstrap.dylib   # optional early-cache launch helper
 dxmt-miplay-<commit>.tar.gz
 dxmt-miplay-<commit>.tar.gz.sha256
 ```
+
+The five renderer files remain mandatory. MiPlay builds now also emit an
+optional x86_64 `integration/dxmt-cache-bootstrap.dylib`, described and hashed
+in `integration_files` and `SHA256SUMS`. It must be explicitly preloaded at the
+Wine execution boundary for strict cache isolation when a game touches Metal
+before DXGI loads. See [the initialization investigation](MIPLAY_METAL_CACHE_INITIALIZATION.md)
+for its fail-closed contract and the remaining launcher/signing validation.
 
 The manifest includes source/fork commit, upstream base, dirty fingerprint,
 submodules, tool versions, dependency lock and input hashes, Meson options,

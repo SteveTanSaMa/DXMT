@@ -1,6 +1,10 @@
 # MiPlay-DXMT independent integration environment
 
-Environment established on 2026-10-09. This is the DXMT fork's environment;
+Environment established on 2026-10-09. Updates on 2026-10-10:
+[serial game observations](MIPLAY_GAME_SMOKE_2026-10-10.md) and
+[early Metal cache initialization fix](MIPLAY_METAL_CACHE_INITIALIZATION.md).
+Later game runs use provenance-tracked, independent APFS game copies,
+redirected Prefix user folders/Z: and explicitly enabled Metal HUD. This is the DXMT fork's environment;
 the LSFG fork must create its own **MiPlay-LSFG**, application identity and
 state directories. No LSFG checkout or another Codex workspace was modified.
 
@@ -182,8 +186,10 @@ public fork.
   state paths. All five runtime component hashes matched the candidate;
   an owned-prefix `wineserver -w` completed after testing.
 
-No real game, graphics swapchain/Drawable/HDR test, LSFG joint run, long-duration
-game stability test or FPS/performance benchmark has been performed. The probe
+The initial environment phase performed no real-game tests. Subsequent
+40/140-second shallow game process observations are recorded in the linked
+reports. Explicit swapchain/Drawable/HDR tests, LSFG joint runs, long-duration
+game stability tests and FPS/performance benchmarks remain unperformed. The probe
 does not cover all D3D11 operations, multi-device teardown races or all Wine
 private macdrv interfaces. CI execution remains a separate validation step.
 
