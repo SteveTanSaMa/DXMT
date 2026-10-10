@@ -231,8 +231,15 @@ _WMTSetMetalShaderCachePath(void *obj) {
   struct unixcall_setmetalcachepath *params = obj;
   NSString *path = [[NSString alloc] initWithCString:params->path.ptr encoding:NSUTF8StringEncoding];
   NSString *resolved_path = resolve_cache_dir(path, false);
+  NSString *previous_path = [MTLGetShaderCachePath() copy];
   MTLSetShaderCachePath(resolved_path);
-  params->ret_success = [MTLGetShaderCachePath() isEqualToString:resolved_path];
+  NSString *actual_path = MTLGetShaderCachePath();
+  params->ret_success = [actual_path isEqualToString:resolved_path];
+  if (!params->ret_success) {
+    NSLog(@"[winemetal] Metal cache path rejected: requested=%@ previous=%@ actual=%@",
+          resolved_path, previous_path, actual_path);
+  }
+  [previous_path release];
   [path release];
   return 0;
 };
